@@ -1,0 +1,115 @@
+---
+title: "MGSC310 Final Project"
+author: "Andrew Abueg, Matt True and Michael Ongko"
+date: "12/5/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(plyr)
+library(tidyr)
+library(glmnet)
+library(cluster)
+library(ggmap)
+library(ggplot2)
+library(ROCR)
+library(rpart)
+library(factoextra) #a lot of these libraries we arent going to use i just read online that some are good for data analysis
+library(VIM)
+library(ggpubr)
+library(cowplot)
+library(stringr)
+setwd("/Users/Mongko/Documents/School/Chapman/Fall 2018/MGSC310/final proj/prj final submit")
+Inpatient_Prospective_Payment_System_IPPS_Provider_Summary_for_the_Top_100_Diagnosis_Related_Groups_DRG_FY2011 <- read.csv("Inpatient_Prospective_Payment_System__IPPS__Provider_Summary_for_the_Top_100_Diagnosis-Related_Groups__DRG__-_FY2011.csv")
+
+df <- Inpatient_Prospective_Payment_System_IPPS_Provider_Summary_for_the_Top_100_Diagnosis_Related_Groups_DRG_FY2011
+
+df <- df %>% dplyr::rename_all(funs(make.names(.))) #ok matt&andrew this thing i found gets rid of all the spaces and replaces them with periods in var. names so dont use spaces cause last time it didnt work cause we had double spaces on some
+
+help(gsub)
+#df$DRG.Definition <- gsub("([[:alpha:]]),([[:alpha:]])", " , \\1", df$DRG.Definition)
+
+#this is for the cluster stuff i figured it out through github
+df = transform(df, DRG.Definitionf = as.factor(DRG.Definition))
+df = transform(df, Provider.Statef = as.factor(Provider.State))
+
+```
+
+```{r}
+#probably take this part out it didnt work properly
+freq.drg.def <- count(df, df$DRG.Definition) #check these two out guys cause i cant seem to run them now
+freq.drg.def <- count(df, DRG.Definition)
+
+freq.p1 <- ggplot(freq.drg.def, aes(x= reorder(freq.drg.def$DRG.Definition, - freq.drg.def$n), y = freq.drg.def$n)) + geom_bar(stat = "identity")
+
+freq.p1 #frequency all operations
+  
+```
+```{r}
+simple_fit <- lm(df$Average.Covered.Charges ~ Average.Total.Payments, data=df)
+
+summary(simple_fit)
+
+```
+
+```{r}
+ggplotRegression <- function (fit) {
+
+require(ggplot2)
+
+ggplot(fit$model, aes_string(x = names(fit$model)[2], y = names(fit$model)[1])) +  
+  geom_point() +
+  stat_smooth(method = "lm", col = "red") +
+  labs(title = paste("Adj R2 = ",signif(summary(fit)$adj.r.squared, 5),
+                     "Intercept =",signif(fit$coef[[1]],5 ),
+                     " Slope =",signif(fit$coef[[2]], 5),
+                     " P =",signif(summary(fit)$coef[2,4], 5))) #careful with the quotes and stuff cause those are the titles, if you guys can figure out how to takeout the axis "df" do that but try it somehwere just in case cause this thing took forever
+}
+
+ggplotRegression(simple_fit)
+```
+```{r}
+#Avg discharge,Covered charge,Total payment
+aggregate(df[, 9:12], list(df$DRG.Definition), mean) 
+
+#" "  by state
+aggregate(df[, 9:12], list(df$Provider.State), mean)
+#i figured out how to group them easily but theyre still categorical and im not sure how to rename them so we dont have the time to fix it to our original idea
+```
+K-means
+```{r}
+aggr(df)
+str(df) #data attributes
+
+# Separate numeric and categorical data
+clusterVars <- c("Average.Total.Payments", "Average.Covered.Charges")
+df.numericClusterData <- df[,clusterVars]
+df.categoricalData <- df[, "DRG.Definition"]
+df.categoricalData$DRG.Definition <- as.factor(df.categoricalData$DRG.Definition)
+#i found this thing on github too, its supposed to only use numerical data, idk jsut try it out. my laptop is too slow for it
+normalize <- function(x){
+  return ((x-min(x))/(max(x)-min(x)))
+}
+
+df.numericClusterData$Average.Total.Payments <- normalize(df.numericClusterData$Average.Total.Payments)
+df.numericClusterData$Average.Covered.Charges <- normalize(df.numericClusterData$Average.Covered.Charges)
+
+head(df.numericClusterData)
+head(df.categoricalData)
+
+
+#i dont think i did this section of code properly this doesnt really work well, we won't use this in the report
+kluster_01 <- kmeans(df.numericClusterData, 3)
+
+# Cluster try#12123
+par(mfrow=c(1,2), mar=c(5,4,2,2))
+plot(df.numericClusterData[c(1,2)], col=kluster_01$cluster)
+#plot(df.numericClusterData[c(1,2)], col=df.categoricalData$DRG.Definition)
+
+#table(kluster_01$cluster, df.categorical.Data$DRG.Definition)
+```
+
+```{r}
+

@@ -1,0 +1,134 @@
+---
+title: "Final Project for MGSC310 pt2"
+author: "Andrew, Matt, Michael"
+date: "12/5/2018"
+output: html_document
+---
+
+```{r}
+
+
+library(ggplot2)
+
+library(useful)
+
+library(glmnet)
+
+library(glmnetUtils)
+
+data1 <- read.csv("Inpatient_Prospective_Payment_System__IPPS__Provider_Summary_for_the_Top_100_Diagnosis-Related_Groups__DRG__-_FY2011.csv")
+
+summary(data1)
+
+head(data1)
+
+dim(data1)
+
+sapply(data1, class)
+
+trainSize <- 0.5
+
+trainInd <- sample(1:nrow(data1), size = floor(nrow(data1) * trainSize))
+
+trainInd
+
+trainDF <- data1[trainInd, ]
+
+dim(trainDF)
+
+validateDF <- data1[-trainInd, ]
+
+dim(trainDF)
+
+dim(validateDF)
+
+data2 <- as.data.frame(lapply(trainDF, as.numeric))
+
+View(data2)
+
+library(corrplot)
+help("corrplot")
+cordata <- cor(data2)
+
+cordata
+
+corrplot::corrplot(cordata)
+
+library(doBy)
+
+library(ggplot2)
+
+summaryBy(Average.Medicare.Payments ~ Total.Discharges + Average.Total.Payments, data = data2)
+
+lmdata <- lm(Average.Medicare.Payments ~ Total.Discharges + Average.Total.Payments + Average.Covered.Charges, data = data2)
+
+par(mfrow = c(2,2))
+
+ggplot2::ggplot(data2 , aes(data2$Average.Medicare.Payments ~ data2$Average.Total.Payments)) + geom_bar()
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 1))+
+  labs(x = "Drg Definition", y = 'Frequency') +
+
+library(glmnet)
+
+#Lassomod1 <- as.formula(SeriousDlqin2yrs ~ RevolvingUtilizationOfUnsecuredLines + age + NumberOfTime30.59DaysPastDueNotWorse + DebtRatio + MonthlyIncome + NumberOfOpenCreditLinesAndLoans + NumberOfTimes90DaysLate + NumberRealEstateLoansOrLines + NumberOfTime60.89DaysPastDueNotWorse + NumberOfDependents)
+#X.vars <- build.x(Lassomod1, data = CS3, contrasts = TRUE)
+#Y.vars <- build.y(Lassomod1, data = CS3)
+
+library(glmnet)
+
+#Lassomod1 <- as.formula(data2$Average.Total.Payments ~ data2$Total.Discharges + data2$Average.Covered.Charges + data2$Average.Total.Payments)
+#X.vars <- build.x(Lassomod1, data = data2, contrasts = TRUE)
+#Y.vars <- build.y(Lassomod1, data = data2)
+
+Ridgefit <- cv.glmnet(x = X.vars , y = Y.vars , alpha = 0)
+Ridgefit
+
+CSRidgefit <- cv.glmnet(x = X.vars, y = Y.vars, alpha = 0)
+
+CSRidgefit
+
+plot(CSRidgefit)
+
+install.packages('plotmo')
+
+library("plotmo")
+
+CS <- glmnet(x = X.vars, y = Y.vars, alpha = 1)
+
+plot_glmnet(CS)
+
+install.packages('coefplot')
+
+library('coefplot')
+
+coefpath(CS)
+
+CSRidgefit$lambda.min
+
+scale_x_discrete(labels = function(x) str_wrap(x, width = 3))+
+  labs(x = "Drg Definition", y = 'Frequency') +
+
+library(ggplot2)
+
+ggplot(data2, aes(x = Average.Medicare.Payments, fill = Average.Total.Payments, y = Total.Discharges, z = Average.Covered.Charges, color = "red")) + theme_classic() + geom_contour() + scale_x_discrete(labels = function(x) str_wrap(x, width = 4)) + labs(x = "Total.Discharges", y = "Average Total Payments", title = "Average Total Payments against Total Discharges")
+
+ggplot(data2, aes(x = Average.Medicare.Payments, fill = Total.Discharges, y = Total.Discharges, color = "red")) + theme_classic() + geom_co() + labs(x = "Avearge Covered Charges", y = "Total Discharges", title = "Average Covered Charges against Total Discharges")
+
+ggplot(data2, aes(x = Perf2$Average.Medicare.Payments, fill = Average.Total.Payments, color = "red")) + theme_classic() + geom_blank() + labs(x = "Total.Discharges", y = "Average Total Payments", title = "Average Total Payments against Total Discharges")
+
+ggplot(data2, aes(x = Average.Covered.Charges, y = Average.Medicare.Payments, fill = Total.Discharges, color = "green")) + theme_dark() + geom_col() + labs(x = "Total Discharges", y = "Average Covered Charge", title = "Average Covered Charges against Total Discharges")
+
+ggplot(data2, aes(x = Total.Discharges, fill = Average.Medicare.Payments, color = "red")) + theme_classic() + geom_bar() + labs(x = "Total Discharges", y = "Average Medicare Payment", title = "Average Medicare against Total Discharges")
+
+ggplot(data2, aes(x = Average.Medicare.Payments, fill =  color = "blue")) + theme_classic() + geom_bar() + labs(x = "Average Total Payments", y = "Total Discharges", title = "Average Total Payments against Total Discharges")
+
+logitmodel <- glm(Average.Medicare.Payments ~ Total.Discharges + Average.Totals.Payments + Average.Covered.Charges , data = data2)
+
+summary(logitmodel)
+
+ggplot(data2, aes(x = data2$Average.Medicare.Payments , fill = data2$Hospital.Referral.Region.Description, color = "red")) + theme_classic() + geom_bar()
+
+exp(logitmodel$coefficients)
+
+ggplot(data2, aes(x = Total.Discharges, y = Average.Total.Payments, fill = Average.Covered.Charges, color = "red")) + theme_classic() + geom_col() + labs(x = "Total Discharges", y = "Average Covered Charge", title = "Average Covered Charges against Total Discharges")
+```
